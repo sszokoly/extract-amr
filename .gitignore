@@ -216,3 +216,18 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+pcaps/*
+.opencode/*
+.agents/*
+openspec/*
+.vscode/*
+drafts/*
+test_*
+task*
+*.pcap
+*.pcapng
+*.amr
+*.awb
+benchmarks/*
+verification/*
+tests/*

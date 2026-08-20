@@ -1,0 +1,43 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "extract-amr"
+version = "0.1.0"
+description = "Extract RTP-carried AMR and AMR-WB media from packet captures"
+readme = "README.md"
+requires-python = ">=3.8"
+dependencies = [
+    "click==8.1.7",
+    "scapy==2.5.0",
+]
+
+[project.optional-dependencies]
+performance = [
+    "bitarray>=3.10.1",
+]
+dev = [
+    "pytest>=8.3,<9",
+    "ruff>=0.6,<1",
+]
+
+[project.scripts]
+extract-amr = "extract_amr.cli:cli"
+
+[tool.setuptools.packages.find]
+include = ["extract_amr*"]
+
+[tool.pytest.ini_options]
+addopts = "-q"
+testpaths = ["tests"]
+markers = [
+    "performance: assertions over repeatable recorded benchmark results",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py38"
+
+[tool.ruff.lint]
+select = ["E", "F", "W"]
