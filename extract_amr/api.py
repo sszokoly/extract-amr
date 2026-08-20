@@ -18,7 +18,7 @@ from typing import (
 )
 
 from .bits import BIT_BACKEND
-from .capture import CaptureSource, _CaptureCounts, iter_udp_records
+from .capture import CaptureProgress, CaptureSource, _CaptureCounts, iter_udp_records
 from .codec import codec_definition
 from .discovery import candidate_identifier, discover_candidates, select_candidates
 from .errors import CaptureInputError, ExtractAmrError, Rfc4867Error, RtpParseError, SelectionError
@@ -93,8 +93,9 @@ def _inspection_rtp_records(
     limits: ResourceLimits,
     counts: _CaptureCounts,
     state: _InspectionState,
+    progress: Optional[CaptureProgress],
 ) -> Iterator[RtpRecord]:
-    for udp in iter_udp_records(source, selector, _counts=counts):
+    for udp in iter_udp_records(source, selector, _counts=counts, _progress=progress):
         try:
             record = parse_rtp(udp)
         except RtpParseError as error:
@@ -111,6 +112,7 @@ def inspect_pcap(
     *,
     selector: Optional[FlowSelector] = None,
     limits: Optional[ResourceLimits] = None,
+    _progress: Optional[CaptureProgress] = None,
 ) -> InspectionReport:
     """Stream one capture pass and return bounded deterministic evidence."""
 
@@ -119,7 +121,7 @@ def inspect_pcap(
     counts = _CaptureCounts()
     state = _InspectionState()
     discovery = discover_candidates(
-        _inspection_rtp_records(source, selected, bounds, counts, state),
+        _inspection_rtp_records(source, selected, bounds, counts, state, _progress),
         selector=selected,
         limits=bounds,
     )
@@ -237,8 +239,9 @@ def _iter_routed_frames(
     limits: ResourceLimits,
     counts: _CaptureCounts,
     states: Dict[FlowKey, _FlowState],
+    progress: Optional[CaptureProgress],
 ) -> Iterator[Tuple[FlowKey, EncodedFrame]]:
-    for udp in iter_udp_records(source, selector, _counts=counts):
+    for udp in iter_udp_records(source, selector, _counts=counts, _progress=progress):
         try:
             record = parse_rtp(udp)
         except RtpParseError as error:
@@ -304,6 +307,7 @@ def iter_frames(
         bounds,
         counts,
         states,
+        None,
     ):
         yield frame
 
@@ -395,20 +399,37 @@ def _report(
     )
 
 
+def _extraction_pass_count(
+    selector: FlowSelector,
+    codec: Optional[Codec],
+    payload_mode: Optional[PayloadMode],
+) -> int:
+    if selector.is_complete and codec is not None and payload_mode is not None:
+        return 1
+    return 2
+
+
 def _resolve_extraction(
     source: CaptureSource,
     selector: FlowSelector,
     codec: Optional[Codec],
     payload_mode: Optional[PayloadMode],
     limits: ResourceLimits,
+    progress: Optional[CaptureProgress],
 ) -> Tuple[Tuple[SelectedFlow, ...], int]:
-    if selector.is_complete and codec is not None and payload_mode is not None:
+    pass_count = _extraction_pass_count(selector, codec, payload_mode)
+    if pass_count == 1:
         return (_explicit_selection(selector, codec, payload_mode),), 1
     if not _is_reopenable_path(source):
         raise CaptureInputError(
             "automatic discovery requires a reopenable capture path",
         )
-    inspection = inspect_pcap(source, selector=selector, limits=limits)
+    inspection = inspect_pcap(
+        source,
+        selector=selector,
+        limits=limits,
+        _progress=progress,
+    )
     return (
         select_candidates(
             inspection.discovery,
@@ -430,6 +451,7 @@ def extract_pcap(
     gap_policy: GapPolicy = GapPolicy.OMIT,
     malformed_policy: MalformedPolicy = MalformedPolicy.SKIP,
     limits: Optional[ResourceLimits] = None,
+    _progress: Optional[CaptureProgress] = None,
 ) -> ExtractionReport:
     """Extract one resolved flow in one pass, or discovery plus one pass."""
 
@@ -441,6 +463,7 @@ def extract_pcap(
         codec,
         payload_mode,
         bounds,
+        _progress,
     )
     if len(selections) != 1:
         raise SelectionError(
@@ -461,6 +484,7 @@ def extract_pcap(
         bounds,
         counts,
         states,
+        _progress,
     ):
         _write_all(stream, serialize_storage_frame(frame))
     state = states[selection.flow_key]
@@ -489,6 +513,7 @@ def extract_flows(
     gap_policy: GapPolicy = GapPolicy.OMIT,
     malformed_policy: MalformedPolicy = MalformedPolicy.SKIP,
     limits: Optional[ResourceLimits] = None,
+    _progress: Optional[CaptureProgress] = None,
 ) -> Tuple[ExtractionReport, ...]:
     """Discover and extract every resolved port-selected full flow."""
 
@@ -499,6 +524,7 @@ def extract_flows(
         codec,
         payload_mode,
         bounds,
+        _progress,
     )
     if callable(outputs):
         resolved_outputs = {selection.flow_key: outputs(selection) for selection in selections}
@@ -538,6 +564,7 @@ def extract_flows(
         bounds,
         counts,
         states,
+        _progress,
     ):
         _write_all(streams[flow_key], serialize_storage_frame(frame))
 

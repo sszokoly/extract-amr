@@ -36,6 +36,12 @@ class CaptureInputError(ExtractAmrError):
     code = "capture-input"
 
 
+class ProgressError(ExtractAmrError):
+    """Capture progress cannot be rendered or updated."""
+
+    code = "progress-output"
+
+
 class SelectionError(ExtractAmrError):
     """An explicit selector does not resolve to valid media."""
 

@@ -6,15 +6,17 @@ import hashlib
 import os
 import re
 import tempfile
+from contextlib import contextmanager
 from dataclasses import dataclass, replace
 from pathlib import Path
-from typing import BinaryIO, Dict, List, Optional, Set, Tuple, Type, TypeVar
+from typing import Any, BinaryIO, Dict, Iterator, List, Optional, Set, Tuple, Type, TypeVar
 
 import click
 
-from .api import extract_flows, extract_pcap, inspect_pcap
+from .api import _extraction_pass_count, extract_flows, extract_pcap, inspect_pcap
 from .bits import BIT_BACKEND
-from .errors import AmbiguousSelectionError, ExtractAmrError
+from .capture import CaptureProgress
+from .errors import AmbiguousSelectionError, ExtractAmrError, ProgressError
 from .models import (
     Codec,
     ExtractionReport,
@@ -108,12 +110,7 @@ def _candidate_formats(
     ]
 
 
-def _render_inspection(options: InspectOptions) -> None:
-    report = inspect_pcap(
-        options.input_path,
-        selector=options.selector,
-        limits=options.limits,
-    )
+def _render_inspection(options: InspectOptions, report) -> None:
     click.echo(
         "capture: "
         f"packets={report.capture_packet_count} udp={report.udp_packet_count} "
@@ -130,12 +127,13 @@ def _render_inspection(options: InspectOptions) -> None:
         click.echo(f"  selector: {_selector_text(candidate.flow_key)}")
         formats = _candidate_formats(candidate, options.codec, options.payload_mode)
         click.echo(f"  formats: {', '.join(formats) if formats else 'none'}")
-    for diagnostic in report.diagnostics:
-        packet = diagnostic.provenance.packet_number
-        location = f"packet {packet}" if packet is not None else "unknown packet"
-        click.echo(f"diagnostic: {location}: {diagnostic.reason}: {diagnostic.message}")
-    if report.diagnostic_overflow_count:
-        click.echo(f"diagnostics omitted: {report.diagnostic_overflow_count}")
+    if not options.progress:
+        for diagnostic in report.diagnostics:
+            packet = diagnostic.provenance.packet_number
+            location = f"packet {packet}" if packet is not None else "unknown packet"
+            click.echo(f"diagnostic: {location}: {diagnostic.reason}: {diagnostic.message}")
+        if report.diagnostic_overflow_count:
+            click.echo(f"diagnostics omitted: {report.diagnostic_overflow_count}")
     discovery = report.discovery
     if discovery.candidate_overflow_count or discovery.sample_overflow_count:
         click.echo(
@@ -200,11 +198,89 @@ def _render_error(error: ExtractAmrError) -> str:
     return "\n".join(lines)
 
 
+def _is_terminal(stream: Any) -> bool:
+    try:
+        return bool(stream.isatty())
+    except (AttributeError, OSError):
+        return False
+
+
+class _ByteProgressRenderer:
+    def __init__(self, bar: Any, total: int) -> None:
+        self._bar = bar
+        self._pending = 0
+        self._threshold = max(1, min(65536, total // 1000 or 1))
+
+    def advance(self, amount: int) -> None:
+        self._pending += amount
+        if self._pending >= self._threshold:
+            self.flush()
+
+    def flush(self) -> None:
+        if self._pending:
+            amount = self._pending
+            self._pending = 0
+            try:
+                self._bar.update(amount)
+            except Exception as error:
+                raise ProgressError("unable to render capture progress") from error
+
+
+@contextmanager
+def _capture_progress(
+    path: Path,
+    pass_count: int,
+    enabled: bool,
+) -> Iterator[Optional[CaptureProgress]]:
+    if not enabled:
+        yield None
+        return
+
+    renderer: Optional[_ByteProgressRenderer] = None
+
+    def advance(amount: int) -> None:
+        if renderer is not None:
+            renderer.advance(amount)
+
+    progress = CaptureProgress(path, pass_count, advance)
+    standard_error = click.get_text_stream("stderr")
+    if not _is_terminal(standard_error):
+        yield progress
+        progress.ensure_complete()
+        return
+
+    try:
+        with click.progressbar(
+            length=progress.total_bytes,
+            label="Processing capture",
+            file=standard_error,
+            show_eta=True,
+            show_percent=True,
+        ) as bar:
+            renderer = _ByteProgressRenderer(bar, progress.total_bytes)
+            try:
+                yield progress
+                progress.ensure_complete()
+            finally:
+                renderer.flush()
+    except ExtractAmrError:
+        raise
+    except Exception as error:
+        raise ProgressError("unable to render capture progress") from error
+
+
 def _run_inspect(options: InspectOptions) -> None:
     """Inspect a capture through the public API and render its report."""
 
     try:
-        _render_inspection(options)
+        with _capture_progress(options.input_path, 1, options.progress) as progress:
+            report = inspect_pcap(
+                options.input_path,
+                selector=options.selector,
+                limits=options.limits,
+                _progress=progress,
+            )
+        _render_inspection(options, report)
     except ExtractAmrError as error:
         raise click.ClickException(_render_error(error)) from error
 
@@ -380,7 +456,7 @@ def _same_path(first: Path, second: Path) -> bool:
         return first.resolve() == second.resolve()
 
 
-def _render_extraction(report: ExtractionReport) -> None:
+def _render_extraction(report: ExtractionReport, show_diagnostics: bool = True) -> None:
     selection = report.selected_flow
     click.echo(f"output: {report.output_path}")
     click.echo(
@@ -412,37 +488,45 @@ def _render_extraction(report: ExtractionReport) -> None:
         f"overlap={report.overlap_frame_count} malformed={report.malformed_packet_count} "
         f"history-overflow={report.packet_history_overflow_count}",
     )
-    for diagnostic in report.diagnostics:
-        packet = diagnostic.provenance.packet_number
-        location = f"packet {packet}" if packet is not None else "unknown packet"
-        click.echo(f"diagnostic: {location}: {diagnostic.reason}: {diagnostic.message}")
-    if report.diagnostic_overflow_count:
-        click.echo(f"diagnostics omitted: {report.diagnostic_overflow_count}")
+    if show_diagnostics:
+        for diagnostic in report.diagnostics:
+            packet = diagnostic.provenance.packet_number
+            location = f"packet {packet}" if packet is not None else "unknown packet"
+            click.echo(f"diagnostic: {location}: {diagnostic.reason}: {diagnostic.message}")
+        if report.diagnostic_overflow_count:
+            click.echo(f"diagnostics omitted: {report.diagnostic_overflow_count}")
 
 
-def _single_extract(options: ExtractOptions) -> None:
+def _single_extract(
+    options: ExtractOptions,
+    progress: Optional[CaptureProgress],
+    transaction: _OutputTransaction,
+) -> ExtractionReport:
     output_path = options.output_path
     if output_path is None:
         raise ValueError("single-flow extraction requires output_path")
     if _same_path(options.input_path, output_path):
         raise OSError("input and output paths must be different")
-    with _OutputTransaction() as transaction:
-        output = transaction.open(output_path)
-        report = extract_pcap(
-            options.input_path,
-            output,
-            selector=options.selector,
-            codec=options.codec,
-            payload_mode=options.payload_mode,
-            gap_policy=options.gap_policy,
-            malformed_policy=options.malformed_policy,
-            limits=options.limits,
-        )
-        transaction.commit()
-    _render_extraction(replace(report, output_path=output_path.absolute()))
+    output = transaction.open(output_path)
+    report = extract_pcap(
+        options.input_path,
+        output,
+        selector=options.selector,
+        codec=options.codec,
+        payload_mode=options.payload_mode,
+        gap_policy=options.gap_policy,
+        malformed_policy=options.malformed_policy,
+        limits=options.limits,
+        _progress=progress,
+    )
+    return replace(report, output_path=output_path.absolute())
 
 
-def _multi_extract(options: ExtractOptions) -> None:
+def _multi_extract(
+    options: ExtractOptions,
+    progress: Optional[CaptureProgress],
+    transaction: _OutputTransaction,
+) -> Tuple[ExtractionReport, ...]:
     output_dir = options.output_dir
     if output_dir is None:
         raise ValueError("multi-flow extraction requires output_dir")
@@ -450,41 +534,49 @@ def _multi_extract(options: ExtractOptions) -> None:
     if not output_dir.is_dir():
         raise OSError(f"output directory is not a directory: {output_dir}")
     paths: Dict[FlowKey, Path] = {}
-    with _OutputTransaction() as transaction:
 
-        def output_for(selection: SelectedFlow) -> BinaryIO:
-            final_path = output_dir / _flow_filename(selection)
-            if _same_path(options.input_path, final_path):
-                raise OSError("input and output paths must be different")
-            paths[selection.flow_key] = final_path.absolute()
-            return transaction.open(final_path)
+    def output_for(selection: SelectedFlow) -> BinaryIO:
+        final_path = output_dir / _flow_filename(selection)
+        if _same_path(options.input_path, final_path):
+            raise OSError("input and output paths must be different")
+        paths[selection.flow_key] = final_path.absolute()
+        return transaction.open(final_path)
 
-        reports = extract_flows(
-            options.input_path,
-            output_for,
-            selector=options.selector,
-            codec=options.codec,
-            payload_mode=options.payload_mode,
-            gap_policy=options.gap_policy,
-            malformed_policy=options.malformed_policy,
-            limits=options.limits,
-        )
-        transaction.commit()
+    reports = extract_flows(
+        options.input_path,
+        output_for,
+        selector=options.selector,
+        codec=options.codec,
+        payload_mode=options.payload_mode,
+        gap_policy=options.gap_policy,
+        malformed_policy=options.malformed_policy,
+        limits=options.limits,
+        _progress=progress,
+    )
     completed = tuple(
         replace(report, output_path=paths[report.selected_flow.flow_key]) for report in reports
     )
-    for report in sorted(completed, key=lambda item: str(item.output_path)):
-        _render_extraction(report)
+    return tuple(sorted(completed, key=lambda item: str(item.output_path)))
 
 
 def _run_extract(options: ExtractOptions) -> None:
     """Extract through the public API with transactional path output."""
 
     try:
-        if options.output_dir is not None:
-            _multi_extract(options)
-        else:
-            _single_extract(options)
+        pass_count = _extraction_pass_count(
+            options.selector,
+            options.codec,
+            options.payload_mode,
+        )
+        with _OutputTransaction() as transaction:
+            with _capture_progress(options.input_path, pass_count, options.progress) as progress:
+                if options.output_dir is not None:
+                    reports = _multi_extract(options, progress, transaction)
+                else:
+                    reports = (_single_extract(options, progress, transaction),)
+            transaction.commit()
+        for report in reports:
+            _render_extraction(report, show_diagnostics=not options.progress)
     except ExtractAmrError as error:
         raise click.ClickException(_render_error(error)) from error
     except (OSError, ValueError) as error:
@@ -525,6 +617,11 @@ def _common_options(command):
             default=1,
             show_default=True,
         ),
+        click.option(
+            "--progress",
+            is_flag=True,
+            help="Show byte-based capture progress and disable diagnostics.",
+        ),
         click.option("--reorder-window", type=click.IntRange(min=1), default=64, show_default=True),
     ]
     for option in reversed(options):
@@ -543,7 +640,9 @@ def cli() -> None:
     type=click.Path(exists=True, dir_okay=False, path_type=Path),
 )
 @_common_options
+@click.pass_context
 def inspect_command(
+    context: click.Context,
     input_path: Path,
     src_address: Optional[str],
     dst_address: Optional[str],
@@ -556,10 +655,15 @@ def inspect_command(
     max_candidates: int,
     max_samples_per_flow: int,
     max_diagnostics: int,
+    progress: bool,
     reorder_window: int,
 ) -> InspectOptions:
     """Validate options for inspecting INPUT_PATH."""
 
+    if progress and (
+        context.get_parameter_source("max_diagnostics") is click.core.ParameterSource.COMMANDLINE
+    ):
+        raise click.UsageError("--progress and --max-diagnostics are mutually exclusive")
     options = InspectOptions(
         input_path=input_path,
         selector=_selector(
@@ -575,9 +679,10 @@ def inspect_command(
         limits=_limits(
             max_candidates,
             max_samples_per_flow,
-            max_diagnostics,
+            0 if progress else max_diagnostics,
             reorder_window,
         ),
+        progress=progress,
     )
     _run_inspect(options)
     return options
@@ -603,7 +708,9 @@ def inspect_command(
     show_default=True,
 )
 @_common_options
+@click.pass_context
 def extract_command(
+    context: click.Context,
     input_path: Path,
     output: Optional[Path],
     output_dir: Optional[Path],
@@ -620,11 +727,19 @@ def extract_command(
     max_candidates: int,
     max_samples_per_flow: int,
     max_diagnostics: int,
+    progress: bool,
     reorder_window: int,
 ) -> ExtractOptions:
     """Validate options for extracting media from INPUT_PATH."""
 
     try:
+        if progress and (
+            context.get_parameter_source("max_diagnostics")
+            is click.core.ParameterSource.COMMANDLINE
+        ):
+            raise click.UsageError(
+                "--progress and --max-diagnostics are mutually exclusive",
+            )
         options = ExtractOptions(
             input_path=input_path,
             output_path=output,
@@ -644,9 +759,10 @@ def extract_command(
             limits=_limits(
                 max_candidates,
                 max_samples_per_flow,
-                max_diagnostics,
+                0 if progress else max_diagnostics,
                 reorder_window,
             ),
+            progress=progress,
         )
     except ValueError as error:
         raise _usage_error(error) from error

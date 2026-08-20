@@ -390,10 +390,11 @@ class ResourceLimits:
     reorder_window: int = 64
 
     def __post_init__(self) -> None:
+        if self.max_diagnostics < 0:
+            raise ValueError("max_diagnostics must be at least 0")
         for name, value in (
             ("max_candidates", self.max_candidates),
             ("max_samples_per_flow", self.max_samples_per_flow),
-            ("max_diagnostics", self.max_diagnostics),
             ("reorder_window", self.reorder_window),
         ):
             if value < 1:
@@ -409,6 +410,7 @@ class InspectOptions:
     codec: Optional[Codec] = None
     payload_mode: Optional[PayloadMode] = None
     limits: ResourceLimits = field(default_factory=ResourceLimits)
+    progress: bool = False
 
 
 @dataclass(frozen=True)
@@ -424,6 +426,7 @@ class ExtractOptions:
     gap_policy: GapPolicy = GapPolicy.OMIT
     malformed_policy: MalformedPolicy = MalformedPolicy.SKIP
     limits: ResourceLimits = field(default_factory=ResourceLimits)
+    progress: bool = False
 
     def __post_init__(self) -> None:
         if (self.output_path is None) == (self.output_dir is None):

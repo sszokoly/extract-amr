@@ -122,8 +122,9 @@ Both commands accept:
 --mode [octet-aligned|bandwidth-efficient]
 --max-candidates INTEGER         default: 1024
 --max-samples-per-flow INTEGER   default: 64
---max-diagnostics INTEGER        default: 100
+--max-diagnostics INTEGER        1..100; default: 1
 --reorder-window INTEGER         default: 64
+--progress                       show byte progress and disable diagnostics
 ```
 
 Extraction also accepts:
@@ -148,6 +149,36 @@ succeeds. If the filesystem also refuses restoration, the CLI reports that
 failure and retains the original bytes in a hidden `.backup` file. Input and
 output cannot refer to the same file, including through a hard link. A caller
 using the stream-based Python API owns its own transaction behavior.
+
+### Processing Progress
+
+Enable progress during inspection or extraction with:
+
+```console
+extract-amr inspect call.pcapng --progress
+extract-amr extract call.pcapng --output call.amr --progress
+```
+
+Progress is measured from bytes consumed in the capture container, not from a
+packet pre-count. Inspection and completely explicit extraction therefore keep
+one capture pass. Automatic and port-filtered extraction show one aggregate bar
+covering their discovery and extraction passes, without adding a third pass.
+Headers, PCAPNG metadata, filtered packets, and non-media packets all contribute
+to completion.
+
+The bar is written only to standard error when standard error is an interactive
+terminal. If it is redirected, progress is silent and the normal report remains
+on standard output. Exact progress requires an uncompressed regular file;
+compressed captures, streams, FIFOs, devices, changing files, and inputs without
+reliable byte positions are rejected before output staging. A failed operation
+closes a partial bar without forcing it to 100 percent.
+
+`--progress` cannot be combined with an explicitly supplied
+`--max-diagnostics`, including `--max-diagnostics 1`. Progress mode retains no
+individual diagnostics and displays neither diagnostic messages nor an omitted
+diagnostic summary. Aggregate statistics such as malformed packet counts remain
+in the final report. Without progress, the CLI continues to retain one
+diagnostic by default.
 
 ### Multi-Flow Names
 
