@@ -123,9 +123,11 @@ def _render_inspection(options: InspectOptions, report) -> None:
     if not report.candidates:
         click.echo("candidates: none")
     for candidate in report.candidates:
+        formats = _candidate_formats(candidate, options.codec, options.payload_mode)
+        if not formats and not options.report_all:
+            continue
         click.echo(f"candidate: {candidate.candidate_id}")
         click.echo(f"  selector: {_selector_text(candidate.flow_key)}")
-        formats = _candidate_formats(candidate, options.codec, options.payload_mode)
         click.echo(f"  formats: {', '.join(formats) if formats else 'none'}")
     if not options.progress:
         for diagnostic in report.diagnostics:
@@ -620,9 +622,13 @@ def _common_options(command):
         click.option(
             "--progress",
             is_flag=True,
-            help="Show byte-based capture progress and disable diagnostics.",
+            help="Show progress bar and disable diagnostics.",
         ),
-        click.option("--reorder-window", type=click.IntRange(min=1), default=64, show_default=True),
+        click.option(
+            "--reorder-window",
+            type=click.IntRange(min=1),
+            default=64,
+            show_default=True),
     ]
     for option in reversed(options):
         command = option(command)
@@ -631,7 +637,7 @@ def _common_options(command):
 
 @click.group()
 def cli() -> None:
-    """Inspect packet captures and extract AMR or AMR-WB media."""
+    """Inspect packet capture and extract AMR or AMR-WB media."""
 
 
 @cli.command("inspect")
@@ -640,6 +646,11 @@ def cli() -> None:
     type=click.Path(exists=True, dir_okay=False, path_type=Path),
 )
 @_common_options
+@click.option(
+    "--report-all",
+    is_flag=True,
+    help="Show all RTP reports."
+)
 @click.pass_context
 def inspect_command(
     context: click.Context,
@@ -657,8 +668,14 @@ def inspect_command(
     max_diagnostics: int,
     progress: bool,
     reorder_window: int,
+    report_all: bool,
 ) -> InspectOptions:
-    """Validate options for inspecting INPUT_PATH."""
+    """
+    Inspect packet capture and generate media reports.
+
+    Validates options and processes the INPUT_PATH PCAP file to identify
+    RTP streams matching the provided filters.
+    """
 
     if progress and (
         context.get_parameter_source("max_diagnostics") is click.core.ParameterSource.COMMANDLINE
@@ -683,6 +700,7 @@ def inspect_command(
             reorder_window,
         ),
         progress=progress,
+        report_all=report_all,
     )
     _run_inspect(options)
     return options
@@ -730,7 +748,11 @@ def extract_command(
     progress: bool,
     reorder_window: int,
 ) -> ExtractOptions:
-    """Validate options for extracting media from INPUT_PATH."""
+    """
+    Process packet captures and extract AMR or AMR-WB media.
+    
+    Validate options for extracting media from INPUT_PATH.
+    """
 
     try:
         if progress and (

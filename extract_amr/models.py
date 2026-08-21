@@ -411,6 +411,7 @@ class InspectOptions:
     payload_mode: Optional[PayloadMode] = None
     limits: ResourceLimits = field(default_factory=ResourceLimits)
     progress: bool = False
+    report_all: bool = False
 
 
 @dataclass(frozen=True)
