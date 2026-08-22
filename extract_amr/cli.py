@@ -749,7 +749,7 @@ def extract_command(
     reorder_window: int,
 ) -> ExtractOptions:
     """
-    Process packet captures and extract AMR or AMR-WB media.
+    Process packet capture and extract AMR or AMR-WB media.
     
     Validate options for extracting media from INPUT_PATH.
     """
