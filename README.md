@@ -1,7 +1,7 @@
 # extract-amr
 
 `extract-amr` inspects and extracts single-channel AMR-NB/AMR-WB audio from RTP
-in PCAP/PCAPNG — no decoding, just the codec stream.
+in PCAP/PCAPNG, no decoding, just the codec stream.
 The package provides a Click command-line interface and a reusable Python API.
 
 ## Installation
