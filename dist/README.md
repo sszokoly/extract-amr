@@ -31,7 +31,7 @@ Replace it with your venv Python path.
    --payload-type 97 --output call2.awb
 ```
 
-Use `.amr` for AMR-NB and `.awb` for AMR-WB, each starting with
-the codec magic header (`#!AMR\n` / `#!AMR-WB\n`) and convert it
-to other audio formats with `ffmpeg` or similar tools that support
-these input formats.
+Use `.amr` extension for AMR-NB and `.awb` for AMR-WB in the output files, 
+then convert them to other audio formats with `ffmpeg` or similar tools 
+that support these input formats. The project folder README.md contains 
+examples on how to convert them to WAV format using `ffmpeg`.

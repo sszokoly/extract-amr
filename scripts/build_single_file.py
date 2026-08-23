@@ -345,10 +345,10 @@ def emit_readme(output_dir: Path, shebang: Optional[str]) -> None:
         "   --payload-type 97 --output call2.awb\n"
         "```\n"
         "\n"
-        "Use `.amr` for AMR-NB and `.awb` for AMR-WB, each starting with\n"
-        "the codec magic header (`#!AMR\\n` / `#!AMR-WB\\n`) and convert it\n"
-        "to other audio formats with `ffmpeg` or similar tools that support\n"
-        "these input formats.\n"
+        "Use `.amr` extension for AMR-NB and `.awb` for AMR-WB in the output files, \n"
+        "then convert them to other audio formats with `ffmpeg` or similar tools \n"
+        "that support these input formats. The project folder README.md contains \n"
+        "examples on how to convert them to WAV format using `ffmpeg`."
     )
     readme_path = output_dir / "README.md"
     readme_path.write_text(readme, encoding="utf-8")
