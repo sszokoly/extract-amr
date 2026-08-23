@@ -1,8 +1,8 @@
 # extract-amr
 
-`extract-amr` streams PCAP and PCAPNG files, identifies RTP-carried AMR or
-AMR-WB media, and writes RFC 4867 single-channel storage streams. The package
-provides a Click command-line interface and a reusable Python API.
+`extract-amr` inspects and extracts single-channel AMR-NB/AMR-WB audio from RTP
+in PCAP/PCAPNG — no decoding, just the codec stream.
+The package provides a Click command-line interface and a reusable Python API.
 
 ## Installation
 
