@@ -53,8 +53,8 @@ The following are explicit non-goals for this release:
 
 The output is an AMR codec storage stream, not a `.3ga` container:
 
-- AMR uses `.amr` and starts with `#!AMR\n`.
-- AMR-WB uses `.awb` and starts with `#!AMR-WB\n`.
+- AMR uses `.amr` and starts with `#!AMR\n` magic header.
+- AMR-WB uses `.awb` and starts with `#!AMR-WB\n` magic header.
 
 ## Command Line
 
