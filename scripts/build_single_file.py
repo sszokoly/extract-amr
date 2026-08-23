@@ -1,4 +1,4 @@
-"""Build a compressed single-file bundle of extract_amr for ASBCE.
+"""Build a compressed single-file bundle of extract_amr.
 
 The bundle concatenates every runtime module of the package in dependency
 order into one flat source file, strips intra-package imports, compresses
@@ -51,7 +51,7 @@ SMOKE_CAPTURES = [
     ("pcaps/amrwb.pcapng", ".awb"),
 ]
 
-BUNDLE_NAME = "extract-amr-asbce.py"
+BUNDLE_NAME = "extract-amr.py"
 FLAT_NAME = "extract-amr.flat.py"
 
 
@@ -322,13 +322,13 @@ def emit_readme(output_dir: Path, shebang: Optional[str]) -> None:
         "## Inspect a packet capture to generate AMR or AMR-WB reports\n"
         "\n"
         "```console\n"
-        f"{python} extract-amr-asbce.py inspect call.pcapng --progress\n"
+        f"{python} extract-amr.py inspect call.pcapng --progress\n"
         "```\n"
         "\n"
         "## Extract an AMR flow using a selector from the reports\n"
         "\n"
         "```console\n"
-        f"{python} extract-amr-asbce.py extract call.pcapng --progress \\\n"
+        f"{python} extract-amr.py extract call.pcapng --progress \\\n"
         "   --src-address 192.168.1.1 --dst-address 10.10.10.1 \\\n"
         "   --src-port 4000 --dst-port 5000 --ssrc 1544726223 \\\n"
         "   --payload-type 98 --output call1.amr\n"
@@ -337,7 +337,7 @@ def emit_readme(output_dir: Path, shebang: Optional[str]) -> None:
         "## Extract an AMR-WB flow using a selector from the reports\n"
         "\n"
         "```console\n"
-        f"{python} extract-amr-asbce.py extract call.pcapng --progress \\\n"
+        f"{python} extract-amr.py extract call.pcapng --progress \\\n"
         "   --src-address 192.168.1.2 --dst-address 10.10.10.2 \\\n"
         "   --src-port 4002 --dst-port 5002 --ssrc 1544726225 \\\n"
         "   --payload-type 97 --output call2.awb\n"

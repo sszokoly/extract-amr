@@ -7,13 +7,13 @@ that already provides Click and Scapy.
 ## Inspect a packet capture to generate AMR or AMR-WB reports
 
 ```console
-/usr/local/ipcs/peon/venv/bin/python3 extract-amr-asbce.py inspect call.pcapng --progress
+/usr/local/ipcs/peon/venv/bin/python3 extract-amr.py inspect call.pcapng --progress
 ```
 
 ## Extract an AMR flow using a selector from the reports
 
 ```console
-/usr/local/ipcs/peon/venv/bin/python3 extract-amr-asbce.py extract call.pcapng --progress \
+/usr/local/ipcs/peon/venv/bin/python3 extract-amr.py extract call.pcapng --progress \
    --src-address 192.168.1.1 --dst-address 10.10.10.1 \
    --src-port 4000 --dst-port 5000 --ssrc 1544726223 \
    --payload-type 98 --output call1.amr
@@ -22,7 +22,7 @@ that already provides Click and Scapy.
 ## Extract an AMR-WB flow using a selector from the reports
 
 ```console
-/usr/local/ipcs/peon/venv/bin/python3 extract-amr-asbce.py extract call.pcapng --progress \
+/usr/local/ipcs/peon/venv/bin/python3 extract-amr.py extract call.pcapng --progress \
    --src-address 192.168.1.2 --dst-address 10.10.10.2 \
    --src-port 4002 --dst-port 5002 --ssrc 1544726225 \
    --payload-type 97 --output call2.awb
