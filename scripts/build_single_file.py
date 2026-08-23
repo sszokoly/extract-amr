@@ -343,7 +343,7 @@ def emit_readme(output_dir: Path, shebang: Optional[str]) -> None:
         "   --payload-type 97 --output call2.awb\n"
         "```\n"
         "\n"
-        "Uses `.amr` for AMR-NB and `.awb` for AMR-WB, each starting with\n"
+        "Use `.amr` for AMR-NB and `.awb` for AMR-WB, each starting with\n"
         "the codec magic header (`#!AMR\\n` / `#!AMR-WB\\n`) and playable with ffmpeg.\n"
     )
     readme_path = output_dir / "README.md"

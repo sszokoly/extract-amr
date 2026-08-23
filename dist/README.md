@@ -28,5 +28,5 @@ that already provides Click and Scapy.
    --payload-type 97 --output call2.awb
 ```
 
-Uses `.amr` for AMR-NB and `.awb` for AMR-WB, each starting with
+Use `.amr` for AMR-NB and `.awb` for AMR-WB, each starting with
 the codec magic header (`#!AMR\n` / `#!AMR-WB\n`) and playable with ffmpeg.
