@@ -344,7 +344,8 @@ def emit_readme(output_dir: Path, shebang: Optional[str]) -> None:
         "```\n"
         "\n"
         "Use `.amr` for AMR-NB and `.awb` for AMR-WB, each starting with\n"
-        "the codec magic header (`#!AMR\\n` / `#!AMR-WB\\n`) and playable with ffmpeg.\n"
+        "the codec magic header (`#!AMR\\n` / `#!AMR-WB\\n`) and playable with \n"
+        "`ffmpeg` or other tools that support these formats.\n"
     )
     readme_path = output_dir / "README.md"
     readme_path.write_text(readme, encoding="utf-8")

@@ -29,4 +29,5 @@ that already provides Click and Scapy.
 ```
 
 Use `.amr` for AMR-NB and `.awb` for AMR-WB, each starting with
-the codec magic header (`#!AMR\n` / `#!AMR-WB\n`) and playable with ffmpeg.
+the codec magic header (`#!AMR\n` / `#!AMR-WB\n`) and playable with 
+`ffmpeg` or other tools that support these formats.
