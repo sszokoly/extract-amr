@@ -21,6 +21,11 @@ from typing import (
 class BitBufferContract(Protocol):
     """Minimal immutable bit-buffer behavior required by the codec layer."""
 
+    def __init__(self, bits: Iterable[int] = ()) -> None:
+        """Construct a buffer from an iterable of 0/1 bits."""
+        ...
+
+
     @classmethod
     def from_bytes(
         cls,
@@ -28,35 +33,44 @@ class BitBufferContract(Protocol):
         bit_length: Optional[int] = None,
     ) -> "BitBufferContract":
         """Create a buffer from most-significant-bit-first bytes."""
+        ...
 
     def __len__(self) -> int:
         """Return the number of significant bits."""
+        ...
 
     def __iter__(self) -> Iterator[int]:
         """Iterate over bits as integers in transmission order."""
+        ...
 
     @overload
     def __getitem__(self, key: int) -> int:
         """Return one bit."""
+        ...
 
     @overload
     def __getitem__(self, key: slice) -> "BitBufferContract":
         """Return a contiguous bit slice."""
+        ...
 
     def __getitem__(
         self,
         key: Union[int, slice],
     ) -> Union[int, "BitBufferContract"]:
         """Return one bit or a contiguous bit slice."""
+        ...
 
     def __add__(self, other: "BitBufferContract") -> "BitBufferContract":
         """Concatenate two buffers."""
+        ...
 
     def to_bytes(self) -> bytes:
         """Serialize bits with zero padding in the least-significant tail."""
+        ...
 
     def to01(self) -> str:
         """Return a diagnostic string containing zero and one characters."""
+        ...
 
 
 def _validated_length(data: bytes, bit_length: Optional[int]) -> int:

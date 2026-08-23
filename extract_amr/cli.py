@@ -26,6 +26,7 @@ from .models import (
     FlowSelector,
     GapPolicy,
     InspectOptions,
+    InspectionReport,
     MalformedPolicy,
     PayloadMode,
     ResourceLimits,
@@ -110,7 +111,7 @@ def _candidate_formats(
     ]
 
 
-def _render_inspection(options: InspectOptions, report) -> None:
+def _render_inspection(options: InspectOptions, report: InspectionReport) -> None:
     click.echo(
         "capture: "
         f"packets={report.capture_packet_count} udp={report.udp_packet_count} "
@@ -624,11 +625,7 @@ def _common_options(command):
             is_flag=True,
             help="Show progress bar and disable diagnostics.",
         ),
-        click.option(
-            "--reorder-window",
-            type=click.IntRange(min=1),
-            default=64,
-            show_default=True),
+        click.option("--reorder-window", type=click.IntRange(min=1), default=64, show_default=True),
     ]
     for option in reversed(options):
         command = option(command)
@@ -646,11 +643,7 @@ def cli() -> None:
     type=click.Path(exists=True, dir_okay=False, path_type=Path),
 )
 @_common_options
-@click.option(
-    "--report-all",
-    is_flag=True,
-    help="Show all RTP reports."
-)
+@click.option("--report-all", is_flag=True, help="Show all RTP reports.")
 @click.pass_context
 def inspect_command(
     context: click.Context,
@@ -750,7 +743,7 @@ def extract_command(
 ) -> ExtractOptions:
     """
     Process packet capture and extract AMR or AMR-WB media.
-    
+
     Validate options for extracting media from INPUT_PATH.
     """
 

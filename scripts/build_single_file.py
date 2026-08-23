@@ -147,7 +147,10 @@ def strip_relative_imports(name: str) -> str:
     source = load_module_source(name)
     tree = ast.parse(source)
     spans = [
-        (node.lineno, node.end_lineno)
+        (
+            node.lineno,
+            node.end_lineno if node.end_lineno is not None else node.lineno,
+        )
         for node in tree.body
         if isinstance(node, ast.ImportFrom) and (node.level > 0 or node.module == "__future__")
     ]

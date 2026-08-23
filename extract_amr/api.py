@@ -10,6 +10,7 @@ from typing import (
     Dict,
     Iterable,
     Iterator,
+    List,
     Mapping,
     Optional,
     Tuple,
@@ -51,7 +52,7 @@ FlowOutputs = Union[Mapping[FlowKey, OutputTarget], OutputFactory]
 class _InspectionState:
     rtp_packet_count: int = 0
     malformed_rtp_count: int = 0
-    diagnostics: list = field(default_factory=list)
+    diagnostics: List[TimelineDiagnostic] = field(default_factory=list)
     diagnostic_overflow_count: int = 0
 
 
@@ -60,7 +61,7 @@ class _FlowState:
     normalizer: TimelineNormalizer
     selected_rtp_packet_count: int = 0
     malformed_rtp_count: int = 0
-    diagnostics: list = field(default_factory=list)
+    diagnostics: List[TimelineDiagnostic] = field(default_factory=list)
     diagnostic_overflow_count: int = 0
     first_packet_number: Optional[int] = None
 
@@ -70,8 +71,8 @@ def _is_reopenable_path(source: CaptureSource) -> bool:
 
 
 def _retain_error(
-    diagnostics: list,
-    state: object,
+    diagnostics: List[TimelineDiagnostic],
+    state: Union[_InspectionState, _FlowState],
     error: ExtractAmrError,
     limits: ResourceLimits,
 ) -> None:
@@ -419,7 +420,13 @@ def _resolve_extraction(
 ) -> Tuple[Tuple[SelectedFlow, ...], int]:
     pass_count = _extraction_pass_count(selector, codec, payload_mode)
     if pass_count == 1:
-        return (_explicit_selection(selector, codec, payload_mode),), 1
+        return (
+            _explicit_selection(
+                selector,
+                cast(Codec, codec),
+                cast(PayloadMode, payload_mode),
+            ),
+        ), 1
     if not _is_reopenable_path(source):
         raise CaptureInputError(
             "automatic discovery requires a reopenable capture path",
