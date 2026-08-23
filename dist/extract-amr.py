@@ -1,7 +1,7 @@
 #!/usr/local/ipcs/peon/venv/bin/python3
 """extract-amr single-file bundle (generated; do not edit).
 
-The flat extract_amr source is zlib-compressed and base64-encoded
+The flat extract-amr source is zlib-compressed and base64-encoded
 below. Regenerate with scripts/build_single_file.py.
 """
 import base64

@@ -1,0 +1,13 @@
+{
+  "backend": {
+    "backend": "python",
+    "bitarray_present": false,
+    "fallback_reason": "ModuleNotFoundError: No module named 'bitarray'"
+  },
+  "cli_reported_python_backend": true,
+  "expected_sha256": "d273d9e15f8df03e26ab8de4fb90d4328adaf393ea244e6b9204c946d604bde4",
+  "output_sha256": "d273d9e15f8df03e26ab8de4fb90d4328adaf393ea244e6b9204c946d604bde4",
+  "passed": true,
+  "python": "Python 3.8.20",
+  "source_sha256": "7a3bf8a4753c8c0fc610b44e4c5ef016a7e5b50b068aef4fe7fe8310c0fc4291"
+}

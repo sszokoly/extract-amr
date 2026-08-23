@@ -450,7 +450,7 @@ characters; Ruff enforces a hard maximum of 100 characters.
 
 ## Disclaimer
 
-`extract_amr` is an independent tool and is not affiliated with, developed by,
+`extract-amr` is an independent tool and is not affiliated with, developed by,
 endorsed by, or supported by any vendor. It is provided "as is," without
 warranties of any kind, express or implied. Users are responsible for evaluating
 its suitability and assume all risks associated with its use.

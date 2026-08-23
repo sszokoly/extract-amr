@@ -1,0 +1,7 @@
+include uv.lock
+recursive-include scripts *.py
+recursive-include tests *.py *.md *.pcap *.pcapng *.amr *.awb
+recursive-include benchmarks *.py *.md *.json
+recursive-include verification *.json
+prune tests/private
+prune verification/private

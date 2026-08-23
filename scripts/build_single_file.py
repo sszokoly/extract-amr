@@ -1,4 +1,4 @@
-"""Build a compressed single-file bundle of extract_amr.
+"""Build a compressed single-file bundle of extract-amr.
 
 The bundle concatenates every runtime module of the package in dependency
 order into one flat source file, strips intra-package imports, compresses
@@ -46,9 +46,51 @@ MODULE_ORDER = [
 
 EXCLUDED_MODULES = {"__init__", "__main__"}
 
-SMOKE_CAPTURES = [
-    ("pcaps/amr.pcapng", ".amr"),
-    ("pcaps/amrwb.pcapng", ".awb"),
+SMOKE_CASES = [
+    (
+        "tests/fixtures/directional_modes.pcap",
+        ".amr",
+        [
+            "--src-address",
+            "192.0.2.1",
+            "--dst-address",
+            "192.0.2.2",
+            "--src-port",
+            "4000",
+            "--dst-port",
+            "5000",
+            "--ssrc",
+            str(0x11111111),
+            "--payload-type",
+            "96",
+            "--codec",
+            "amr",
+            "--mode",
+            "octet-aligned",
+        ],
+    ),
+    (
+        "tests/fixtures/directional_modes.pcap",
+        ".awb",
+        [
+            "--src-address",
+            "192.0.2.2",
+            "--dst-address",
+            "192.0.2.1",
+            "--src-port",
+            "5000",
+            "--dst-port",
+            "4000",
+            "--ssrc",
+            str(0x11111111),
+            "--payload-type",
+            "96",
+            "--codec",
+            "amr-wb",
+            "--mode",
+            "bandwidth-efficient",
+        ],
+    ),
 ]
 
 BUNDLE_NAME = "extract-amr.py"
@@ -212,7 +254,7 @@ def wrap_launcher(flat_source: str, shebang: Optional[str]) -> str:
         [
             '"""extract-amr single-file bundle (generated; do not edit).',
             "",
-            "The flat extract_amr source is zlib-compressed and base64-encoded",
+            "The flat extract-amr source is zlib-compressed and base64-encoded",
             "below. Regenerate with scripts/build_single_file.py.",
             '"""',
             "import base64",
@@ -270,7 +312,7 @@ def smoke_verify(bundle_path: Path) -> None:
     print("smoke: --help")
     run_command([sys.executable, str(bundle_path), "--help"], "--help smoke")
 
-    for capture, extension in SMOKE_CAPTURES:
+    for capture, extension, selector_arguments in SMOKE_CASES:
         capture_path = REPO_ROOT / capture
         if not capture_path.is_file():
             raise BuildError(f"smoke fixture missing: {capture_path}")
@@ -284,6 +326,7 @@ def smoke_verify(bundle_path: Path) -> None:
                 "extract_amr",
                 "extract",
                 str(capture_path),
+                *selector_arguments,
                 "--output",
                 str(reference),
             ],
@@ -295,6 +338,7 @@ def smoke_verify(bundle_path: Path) -> None:
                 str(bundle_path),
                 "extract",
                 str(capture_path),
+                *selector_arguments,
                 "--output",
                 str(bundled),
             ],
