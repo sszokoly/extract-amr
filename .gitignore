@@ -12,6 +12,7 @@ build/
 develop-eggs/
 dist/
 !dist/extract-amr-asbce.py
+!dist/README.md
 downloads/
 eggs/
 .eggs/

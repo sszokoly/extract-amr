@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from decimal import Decimal, InvalidOperation
 from os import PathLike
 from pathlib import Path
-from typing import Any, Callable, Iterator, Optional, Union
+from typing import Any, Callable, Iterator, Optional, Protocol, Union, cast
 
 from scapy.error import Scapy_Exception
 from scapy.layers.inet import IP, UDP
@@ -21,6 +21,15 @@ from .models import CaptureProvenance, FlowSelector, UdpRecord
 
 CapturePath = Union[str, PathLike]
 CaptureSource = Union[CapturePath, Any]
+
+
+class _CaptureReader(Protocol):
+    """Runtime surface of PcapReader that scapy's stubs omit."""
+
+    f: Any
+
+    def __iter__(self) -> Iterator[Packet]: ...
+    def close(self) -> None: ...
 
 
 @dataclass
@@ -302,7 +311,8 @@ def iter_udp_records(
     active_selector = selector or FlowSelector()
     source = str(path) if isinstance(path, (str, PathLike)) else _NonClosingSource(path)
     try:
-        with PcapReader(source) as reader:
+        reader = cast(_CaptureReader, PcapReader(cast(str, source)))
+        try:
             if _progress is not None:
                 _progress.start_pass(path, reader.f)
             for packet_number, packet in enumerate(reader, start=1):
@@ -317,6 +327,8 @@ def iter_udp_records(
                     yield record
             if _progress is not None:
                 _progress.finish_pass(path, reader.f)
+        finally:
+            reader.close()
     except (EOFError, OSError, Scapy_Exception, ValueError) as error:
         raise CaptureInputError(
             f"unable to read capture {path}: {error}",

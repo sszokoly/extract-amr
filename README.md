@@ -333,7 +333,6 @@ with ExitStack() as stack:
             open(f"{selection.candidate_id}.{extension}", "wb"),
         )
 
-
     reports = extract_flows(
         "call.pcapng",
         output_for,

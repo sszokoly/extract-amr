@@ -25,7 +25,6 @@ class BitBufferContract(Protocol):
         """Construct a buffer from an iterable of 0/1 bits."""
         ...
 
-
     @classmethod
     def from_bytes(
         cls,
