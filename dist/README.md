@@ -32,5 +32,6 @@ Replace it with your venv Python path.
 ```
 
 Use `.amr` for AMR-NB and `.awb` for AMR-WB, each starting with
-the codec magic header (`#!AMR\n` / `#!AMR-WB\n`) and playable with 
-`ffmpeg` or other tools that support these formats.
+the codec magic header (`#!AMR\n` / `#!AMR-WB\n`) and convert it
+to other audio formats with `ffmpeg` or similar tools that support
+these input formats.
