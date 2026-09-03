@@ -15,6 +15,7 @@ from scapy.layers.l2 import Ether
 from scapy.packet import Raw
 from scapy.utils import PcapNgWriter, PcapWriter
 
+from extract_amr import __version__
 from extract_amr.cli import cli
 from extract_amr.models import (
     Codec,
@@ -126,11 +127,19 @@ def test_top_level_and_command_help() -> None:
     assert result.exit_code == 0
     assert "inspect" in result.output
     assert "extract" in result.output
+    assert "--version" in result.output
     assert "--src-port" in inspect_help.output
     assert "--output-dir" in extract_help.output
     assert "--gap-policy" in extract_help.output
     assert "--progress" in inspect_help.output
     assert "--progress" in extract_help.output
+
+
+def test_version_option() -> None:
+    result = CliRunner().invoke(cli, ["--version"])
+
+    assert result.exit_code == 0
+    assert result.output.endswith(f", version {__version__}\n")
 
 
 def test_extract_converts_a_complete_flow_to_typed_options(

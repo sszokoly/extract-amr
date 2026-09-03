@@ -13,6 +13,7 @@ from typing import Any, BinaryIO, Dict, Iterator, List, Optional, Set, Tuple, Ty
 
 import click
 
+from . import __version__
 from .api import _extraction_pass_count, extract_flows, extract_pcap, inspect_pcap
 from .bits import BIT_BACKEND
 from .capture import CaptureProgress
@@ -633,6 +634,10 @@ def _common_options(command):
 
 
 @click.group()
+@click.version_option(
+    version=__version__,
+    message="version %(version)s",
+)
 def cli() -> None:
     """Inspect packet capture and extract AMR or AMR-WB media."""
 

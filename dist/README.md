@@ -7,6 +7,18 @@ that already provides Click and Scapy.
 In the examples below, the python path is `/usr/local/ipcs/peon/venv/bin/python3`.
 Replace it with your venv Python path.
 
+## Encryption passphrase
+
+The encrypted launcher checks these passphrase sources in order:
+
+1. `ENC_PASSPHRASE` in `.env` beside the resolved launcher path.
+2. `--enc-passphrase VALUE` or `--enc-passphrase=VALUE`.
+3. A hidden interactive prompt.
+
+Dotenv support is optional. Install it with `python -m pip install python-dotenv`, create the sibling `.env`, and restrict its permissions, for example with `chmod 600 .env`. The dotenv value is not exported to the application environment.
+
+Command-line passphrases may be retained in shell history and exposed through operating-system process inspection. Prefer `.env` with restrictive permissions or the hidden prompt when possible.
+
 ## Inspect a packet capture to generate AMR or AMR-WB reports
 
 ```console
@@ -34,4 +46,4 @@ Replace it with your venv Python path.
 Use `.amr` extension for AMR-NB and `.awb` for AMR-WB in the output files, 
 then convert them to other audio formats with `ffmpeg` or similar tools 
 that support these input formats. The project folder README.md contains 
-examples on how to convert them to WAV format using `ffmpeg`.
+examples on how to convert them to WAV format using `ffmpeg` or `Audacity`.
