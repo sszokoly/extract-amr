@@ -18,6 +18,7 @@ from __future__ import annotations
 import argparse
 import ast
 import base64
+from datetime import datetime, timezone
 import hashlib
 import os
 import shutil
@@ -300,6 +301,7 @@ def wrap_launcher(
     flat_source: str,
     shebang: Optional[str],
     encryption_passphrase: Optional[str] = None,
+    validity: Optional[float] = None,
 ) -> str:
     blob = base64.encodebytes(zlib.compress(flat_source.encode("utf-8"), 9))
     encrypted = encryption_passphrase is not None
@@ -328,9 +330,14 @@ def wrap_launcher(
             *payload_description.splitlines(),
             *author_description.splitlines(),
             '"""',
-            "import base64",
         ]
     )
+    if validity is not None:
+        validity_text = datetime.fromtimestamp(validity, timezone.utc).strftime(
+            "%Y-%m-%dT%H:%M:%SZ"
+        )
+        lines.append(f"# VALIDITY: {validity_text}")
+    lines.append("import base64")
     if encrypted:
         lines.extend(["import getpass", "import unicodedata", "from pathlib import Path"])
     lines.extend(["import sys", "import traceback", "import zlib", "", ""])
@@ -659,7 +666,7 @@ def build(
         flat_path.write_text(flat_source, encoding="utf-8")
         print(f"wrote {flat_path}")
 
-    launcher = wrap_launcher(flat_source, shebang, encryption_passphrase)
+    launcher = wrap_launcher(flat_source, shebang, encryption_passphrase, validity)
     compile(launcher, "<launcher>", "exec")
     bundle_path = output_dir / BUNDLE_NAME
     bundle_path.write_text(launcher, encoding="utf-8")

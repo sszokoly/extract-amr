@@ -616,10 +616,11 @@ def _common_options(command):
             show_default=True,
         ),
         click.option(
-            "--max-diagnostics",
-            type=click.IntRange(1, 100),
+            "--diagnostic-limit",
+            type=click.IntRange(min=0),
             default=1,
             show_default=True,
+            help="Maximum individual diagnostic messages to retain (0 disables them).",
         ),
         click.option(
             "--progress",
@@ -663,7 +664,7 @@ def inspect_command(
     mode: Optional[str],
     max_candidates: int,
     max_samples_per_flow: int,
-    max_diagnostics: int,
+    diagnostic_limit: int,
     progress: bool,
     reorder_window: int,
     report_all: bool,
@@ -676,9 +677,9 @@ def inspect_command(
     """
 
     if progress and (
-        context.get_parameter_source("max_diagnostics") is click.core.ParameterSource.COMMANDLINE
+        context.get_parameter_source("diagnostic_limit") is click.core.ParameterSource.COMMANDLINE
     ):
-        raise click.UsageError("--progress and --max-diagnostics are mutually exclusive")
+        raise click.UsageError("--progress and --diagnostic-limit are mutually exclusive")
     options = InspectOptions(
         input_path=input_path,
         selector=_selector(
@@ -694,7 +695,7 @@ def inspect_command(
         limits=_limits(
             max_candidates,
             max_samples_per_flow,
-            0 if progress else max_diagnostics,
+            0 if progress else diagnostic_limit,
             reorder_window,
         ),
         progress=progress,
@@ -742,7 +743,7 @@ def extract_command(
     mode: Optional[str],
     max_candidates: int,
     max_samples_per_flow: int,
-    max_diagnostics: int,
+    diagnostic_limit: int,
     progress: bool,
     reorder_window: int,
 ) -> ExtractOptions:
@@ -754,11 +755,11 @@ def extract_command(
 
     try:
         if progress and (
-            context.get_parameter_source("max_diagnostics")
+            context.get_parameter_source("diagnostic_limit")
             is click.core.ParameterSource.COMMANDLINE
         ):
             raise click.UsageError(
-                "--progress and --max-diagnostics are mutually exclusive",
+                "--progress and --diagnostic-limit are mutually exclusive",
             )
         options = ExtractOptions(
             input_path=input_path,
@@ -779,7 +780,7 @@ def extract_command(
             limits=_limits(
                 max_candidates,
                 max_samples_per_flow,
-                0 if progress else max_diagnostics,
+                0 if progress else diagnostic_limit,
                 reorder_window,
             ),
             progress=progress,

@@ -122,7 +122,7 @@ Both commands accept:
 --mode [octet-aligned|bandwidth-efficient]
 --max-candidates INTEGER         default: 1024
 --max-samples-per-flow INTEGER   default: 64
---max-diagnostics INTEGER        1..100; default: 1
+--diagnostic-limit INTEGER        0+; default: 1; retained individual messages
 --reorder-window INTEGER         default: 64
 --progress                       show byte progress and disable diagnostics
 ```
@@ -174,11 +174,12 @@ reliable byte positions are rejected before output staging. A failed operation
 closes a partial bar without forcing it to 100 percent.
 
 `--progress` cannot be combined with an explicitly supplied
-`--max-diagnostics`, including `--max-diagnostics 1`. Progress mode retains no
+`--diagnostic-limit`, including `--diagnostic-limit 0`. Progress mode retains no
 individual diagnostics and displays neither diagnostic messages nor an omitted
 diagnostic summary. Aggregate statistics such as malformed packet counts remain
-in the final report. Without progress, the CLI continues to retain one
-diagnostic by default.
+in the final report. Without progress, `--diagnostic-limit` controls how many
+individual diagnostic messages are retained; `0` retains none, and the default
+retains one.
 
 ### Multi-Flow Names
 

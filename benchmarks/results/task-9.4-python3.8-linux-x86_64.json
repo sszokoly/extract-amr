@@ -3,7 +3,7 @@
     "bitarray": "3.10.1",
     "extract_amr": "0.1.0",
     "machine": "x86_64",
-    "platform": "Linux-7.1.10-100.fc43.x86_64-x86_64-with-glibc2.2.5",
+    "platform": "Linux-7.2.5-100.fc43.x86_64-x86_64-with-glibc2.2.5",
     "python": "3.8.20",
     "scapy": "2.5.0"
   },
@@ -28,7 +28,7 @@
       "peak_bytes": 639578,
       "requested_packet_count": 20000,
       "retained_bytes": 108570,
-      "vm_hwm_kib": 41176
+      "vm_hwm_kib": 40944
     },
     "medium": {
       "backend": "bitarray",
@@ -49,7 +49,7 @@
       "peak_bytes": 500475,
       "requested_packet_count": 5000,
       "retained_bytes": 108523,
-      "vm_hwm_kib": 40800
+      "vm_hwm_kib": 40760
     },
     "passed": true,
     "peak_delta_bytes": 227824,
@@ -74,7 +74,7 @@
       "peak_bytes": 411754,
       "requested_packet_count": 1000,
       "retained_bytes": 98048,
-      "vm_hwm_kib": 40680
+      "vm_hwm_kib": 40600
     },
     "successive_growth": {
       "peak_bytes": {
@@ -99,43 +99,43 @@
       "successive_growth_floor_bytes": 65536,
       "vm_hwm_delta_kib": 16384
     },
-    "vm_hwm_delta_kib": 496
+    "vm_hwm_delta_kib": 344
   },
   "passed": true,
   "schema_version": 2,
-  "source_sha256": "b8576cba49548746c96ef1a23b97f232031bc5f5bde1b504ff948de6ed3fa13e",
+  "source_sha256": "cac9d4b1d5918ea125ea78c48a141d198ce0a5668da99fac26ed9fd2555f2508",
   "throughput": {
     "accelerated": {
       "backend": "bitarray",
       "fallback_reason": null,
       "iterations_per_sample": 3000,
-      "median_payloads_per_second": 11319.16025332325,
+      "median_payloads_per_second": 12258.969655406978,
       "output_sha256": "96c602fb09a6e20fa952db37db83ee53b0018104bc6ef0f86549a9737bf34b4d",
       "payload_sha256": "47a39297b321bcb6a73a82a33f9c1f5f9bea0d32f370da836bcc87af8d0b39aa",
       "samples": [
-        0.2652512670028955,
-        0.26503732899436727,
-        0.2546299179957714,
-        0.27239149301021826,
-        0.2642066900007194
+        0.24292579999746522,
+        0.2447187719953945,
+        0.25200972199672833,
+        0.2475340020027943,
+        0.23740268199617276
       ],
       "total_frames": 60000
     },
-    "accelerated_to_python_ratio": 1.0868518940035956,
+    "accelerated_to_python_ratio": 1.0618513891604282,
     "parity": true,
     "pure_python": {
       "backend": "python",
       "fallback_reason": "ImportError: benchmark forced pure-Python backend",
       "iterations_per_sample": 3000,
-      "median_payloads_per_second": 10414.629919470706,
+      "median_payloads_per_second": 11544.901462246757,
       "output_sha256": "96c602fb09a6e20fa952db37db83ee53b0018104bc6ef0f86549a9737bf34b4d",
       "payload_sha256": "47a39297b321bcb6a73a82a33f9c1f5f9bea0d32f370da836bcc87af8d0b39aa",
       "samples": [
-        0.30129511399718467,
-        0.2930719690048136,
-        0.28805632299918216,
-        0.2796214459958719,
-        0.2769772130122874
+        0.25985496799694374,
+        0.26441362500190735,
+        0.26256394699885277,
+        0.2571294420049526,
+        0.25166528000409016
       ],
       "total_frames": 60000
     }

@@ -253,3 +253,16 @@ def test_unencrypted_launcher_has_no_passphrase_resolution() -> None:
     assert "getpass" not in source
     assert "KDF_" not in source
     assert "cryptography" not in source
+
+
+def test_time_limited_launcher_shows_utc_validity_header() -> None:
+    source = BUILDER["wrap_launcher"]("print('payload ran')\n", None, validity=86_400)
+
+    assert 'Contact: https://github.com/sszokoly\n"""\n# VALIDITY: 1970-01-02T00:00:00Z' in source
+    assert "VALIDITY =" not in source
+
+
+def test_launcher_without_validity_has_no_validity_header() -> None:
+    source = BUILDER["wrap_launcher"]("print('payload ran')\n", None)
+
+    assert "# VALIDITY:" not in source

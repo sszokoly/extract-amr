@@ -139,7 +139,7 @@ def test_version_option() -> None:
     result = CliRunner().invoke(cli, ["--version"])
 
     assert result.exit_code == 0
-    assert result.output.endswith(f", version {__version__}\n")
+    assert result.output == f"version {__version__}\n"
 
 
 def test_extract_converts_a_complete_flow_to_typed_options(
@@ -293,7 +293,7 @@ def test_inspect_converts_resource_and_selector_options(
             "12",
             "--max-samples-per-flow",
             "8",
-            "--max-diagnostics",
+            "--diagnostic-limit",
             "4",
         ],
     )
@@ -658,6 +658,42 @@ def test_zero_diagnostics_is_valid_but_negative_is_rejected() -> None:
         ResourceLimits(max_diagnostics=-1)
 
 
+@pytest.mark.parametrize("limit", [0, 101])
+def test_diagnostic_limit_accepts_zero_and_large_values(
+    tmp_path: Path,
+    monkeypatch,
+    limit: int,
+) -> None:
+    capture = _capture(tmp_path)
+    received: List[InspectOptions] = []
+    monkeypatch.setattr(cli_module, "_run_inspect", received.append)
+
+    result = CliRunner().invoke(
+        cli,
+        ["inspect", str(capture), "--diagnostic-limit", str(limit)],
+    )
+
+    assert result.exit_code == 0
+    assert received[0].limits.max_diagnostics == limit
+
+
+@pytest.mark.parametrize(
+    "arguments",
+    (
+        ["--diagnostic-limit", "-1"],
+        ["--diagnostic-limit", "many"],
+        ["--max-diagnostics", "1"],
+    ),
+)
+def test_diagnostic_limit_rejects_invalid_and_removed_options(
+    tmp_path: Path,
+    arguments: List[str],
+) -> None:
+    result = CliRunner().invoke(cli, ["inspect", str(_capture(tmp_path)), *arguments])
+
+    assert result.exit_code == 2
+
+
 def test_progress_builds_zero_diagnostic_options_and_preserves_default(
     tmp_path: Path,
     monkeypatch,
@@ -681,8 +717,8 @@ def test_progress_builds_zero_diagnostic_options_and_preserves_default(
 @pytest.mark.parametrize(
     "arguments",
     (
-        ["--progress", "--max-diagnostics", "1"],
-        ["--max-diagnostics", "1", "--progress"],
+        ["--progress", "--diagnostic-limit", "0"],
+        ["--diagnostic-limit", "0", "--progress"],
     ),
 )
 @pytest.mark.parametrize("command", ["inspect", "extract"])
